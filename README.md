@@ -1,70 +1,73 @@
-# Getting Started with Create React App
+# Отче: Интернет-магазин книг (Book Finder)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## 1. Описание предметной области
+Приложение представляет собой прототип книжного интернет-магазина. Предоставляет возможность искать литературу по названию, просматривать список найденных книг и изучать детальную информацию о каждом издании.
 
-## Available Scripts
+В качестве источника данных используется открытое API "Open Library". Цена генерируются на клиенте случайным образом (это всего лишь прототип).
 
-In the project directory, you can run:
+## 2. Архитектура клиента и сервера
 
-### `npm start`
+### Клиентская часть (Frontend)
+Приложение написано на React
+* Для навигации используется библиотека `react-router-dom` (v6).
+* Для управления состоянием используются хуки React (`useState`, `useEffect`, `useCallback`, `useParams`).
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Серверная часть (Backend)
+Собственный бэкенд отсутствует. Приложение взаимодействует с публичным REST API OpenLibrary.org.
+* Клиент отправляет асинхронные GET-запросы.
+* Сервер возвращает данные в формате JSON.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 3. Описание реализованных функций
 
-### `npm test`
+В приложении реализован следующий функционал:
+1.  **Авторизация:** Авторизация без логина и пароля, "гостевой" вход для студентов.
+2.  **Поиск:** Поле ввода для поиска книг по названию.
+3.  **Пагинация:** Реализована кнопка "Загрузить больше", которая подгружает следующую порцию книг к уже существующему списку (столько, сколько это возможно).
+4.  **Детальный просмотр:** Отдельная страница для каждой книги с отображением обложки, полного описания, года издания и цены (если данные предоставлены API).
+5.  **Обработка состояний:** Интерфейс реагирует на процесс загрузки (показывает сообщение "Загрузка...") и на ошибки сети ("Ошибка соединения").
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 4. Логика маршрутизации
 
-### `npm run build`
+Маршрутизация построена на базе `BrowserRouter`. Основные маршруты:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+* `/` — Главная страница (доступна всем).
+* `/login` — Страница входа. Принимает функцию авторизации от родителя.
+* `/books` — Страница каталога (Protected Route). Если пользователь не авторизован (`isAuth === false`), компонент `<Navigate />` автоматически перенаправляет его на `/login`.
+* `/books/works/:id` — Динамический маршрут для страницы товара. Параметр `:id` используется для запроса данных конкретной книги.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Для переходов между страницами используется компонент `<Link>`, что предотвращает перезагрузку страницы и сброс состояния приложения.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## 5. Описание хука useServerGoods
 
-### `npm run eject`
+Взаимодействие с API вынесено в отдельный кастомный хук `useServerGoods`. Это позволяет отделить логику получения данных от логики отображения (UI).
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+**Как он работает:**
+1.  Хранит состояния: список книг, флаг загрузки, ошибка, флаг наличия следующих страниц.
+2.  Предоставляет метод `loadGoods(query, page)`.
+3.  Использует `useCallback`, чтобы ссылка на функцию не менялась при ререндерах.
+4.  Реализует логику объединения данных: если запрашивается 1-я страница, массив перезаписывается; если последующие — новые данные добавляются в конец текущего массива.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Хук возвращает объект с данными и методами, который затем используется в компоненте `App.js`.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## 6. Примеры запросов к API
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+Приложение использует два основных эндпоинта OpenLibrary:
 
-## Learn More
+**1. Поиск книг (список):**
+`GET https://openlibrary.org/search.json?title={название}&page={номер}`
+* Используется для получения списка книг по запросу.
+* Из ответа берутся поля: `key` (id), `title`, `author_name`, `first_publish_year`.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+**2. Данные одной книги:**
+`GET https://openlibrary.org/works/{id}.json`
+* Используется на детальной странице.
+* В URL подставляется ID, полученный через `useParams` (с добавлением префикса `/works/` при необходимости).
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## 7. Выводы
 
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+При разработке понял, как использовать и осуществлять:
+* Функциональнык компоненты и хуки.
+* Клиентскую маршрутизацию и защиту маршрутов.
+* Асинхронное взаимодействие с внешним API.
+* Обработку ошибок и состояние загрузки.
+* Сборку проекта.
